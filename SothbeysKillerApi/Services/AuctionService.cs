@@ -1,4 +1,5 @@
 ﻿using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Repository;
 
 namespace SothbeysKillerApi.Services;
 
@@ -15,39 +16,41 @@ public interface IAuctionService
 
 public class AuctionService : IAuctionService
 {
-    public static List<Auction> auctionsStorage = [];
-
+    private readonly IAuctionRepository _auctionRepository;
+    
+    public AuctionService(IAuctionRepository auctionRepository)
+    {
+        _auctionRepository = auctionRepository;
+    }
+    
     public List<AuctionResponse> GetPastAuctions()
     {
-        var auctions = auctionsStorage
-            .Where(a => a.Finish < DateTime.Now)
+        var auctions = _auctionRepository.GetPast();
+
+        return auctions
             .Select(auction => new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish))
             .OrderByDescending(a => a.Start)
             .ToList();
-
-        return auctions;
     }
     
     public List<AuctionResponse> GetActiveAuctions()
     {
-        var auctions = auctionsStorage
-            .Where(a => a.Start < DateTime.Now && a.Finish > DateTime.Now)
+        var auctions = _auctionRepository.GetActive();
+
+        return auctions
             .Select(auction => new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish))
             .OrderByDescending(a => a.Start)
             .ToList();
-
-        return auctions;
     }
     
     public List<AuctionResponse> GetFutureAuctions()
     {
-        var auctions = auctionsStorage
-            .Where(a => a.Start > DateTime.Now)
+        var auctions = _auctionRepository.GetFuture();
+
+        return auctions
             .Select(auction => new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish))
             .OrderByDescending(a => a.Start)
             .ToList();
-
-        return auctions;
     }
 
     public Guid CreateAuction(AuctionCreateRequest request)
@@ -56,12 +59,12 @@ public class AuctionService : IAuctionService
         {
             throw new ArgumentException();
         }
-
+        
         if (request.Start < DateTime.Now)
         {
             throw new ArgumentException();
         }
-
+        
         if (request.Finish <= request.Start)
         {
             throw new ArgumentException();
@@ -74,29 +77,29 @@ public class AuctionService : IAuctionService
             Start = request.Start,
             Finish = request.Finish
         };
-        
-        auctionsStorage.Add(auction);
 
-        return auction.Id;
+        var created = _auctionRepository.Create(auction);
+
+        return created.Id;
     }
 
     public AuctionResponse GetAuctionById(Guid id)
     {
-        var auction = auctionsStorage.FirstOrDefault(a => a.Id == id);
+        var auction = _auctionRepository.GetById(id);
 
-        if (auction is not null)
+        if (auction is null)
         {
-            var response = new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish);
-            
-            return response;
+            throw new NullReferenceException();
         }
-
-        throw new NullReferenceException();
+            
+        var response = new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish);
+            
+        return response;
     }
 
     public void UpdateAuction(Guid id, AuctionUpdateRequest request)
     {
-        var auction = auctionsStorage.FirstOrDefault(a => a.Id == id);
+        var auction = _auctionRepository.GetById(id);
         
         if (auction is null)
         {
@@ -120,11 +123,13 @@ public class AuctionService : IAuctionService
 
         auction.Start = request.Start;
         auction.Finish = request.Finish;
+
+        _auctionRepository.Update(auction);
     }
 
     public void DeleteAuction(Guid id)
     {
-        var auction = auctionsStorage.FirstOrDefault(a => a.Id == id);
+        var auction = _auctionRepository.GetById(id);
         
         if (auction is null)
         {
@@ -136,7 +141,6 @@ public class AuctionService : IAuctionService
             throw new ArgumentException();
         }
 
-        auctionsStorage.Remove(auction);
-
+        _auctionRepository.Delete(id);
     }
 }
