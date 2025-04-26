@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using SothbeysKillerApi.Services;
 
 namespace SothbeysKillerApi.Controllers;
@@ -8,14 +8,6 @@ public record AuctionCreateRequest(string Title, DateTime Start, DateTime Finish
 public record AuctionUpdateRequest(DateTime Start, DateTime Finish);
 
 public record AuctionResponse(Guid Id, string Title, DateTime Start, DateTime Finish);
-
-public class Auction
-{
-    public Guid Id { get; set; }
-    public string Title { get; set; }
-    public DateTime Start { get; set; }
-    public DateTime Finish { get; set; }
-}
 
 [ApiController]
 [Route("api/v1/[controller]")]

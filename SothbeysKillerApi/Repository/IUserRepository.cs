@@ -1,4 +1,5 @@
 using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Entities;
 
 namespace SothbeysKillerApi.Repository;
 

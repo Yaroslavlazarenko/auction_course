@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
 using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Exceptions;
+using SothbeysKillerApi.Entities;
 using SothbeysKillerApi.Repository;
 
 namespace SothbeysKillerApi.Services;
@@ -30,7 +31,7 @@ public class LotService : ILotService
         
         if (lot is null)
         {
-            throw new NullReferenceException("No lots found");
+            throw new LotValidationException([new ValidationError("LotId", "Лот не знайдено")]);
         }
             
         return new LotResponse(lot.Id, lot.AuctionId, lot.Title, lot.Description, lot.StartPrice, lot.PriceStep);
@@ -45,7 +46,8 @@ public class LotService : ILotService
         
         if (lots.Count == 0)
         {
-            throw new NullReferenceException("No lots found");
+            throw new LotValidationException([new ValidationError("LotId", "Для цього аукціону не знайдено жодного лота")
+            ]);
         }
             
         return lots;
@@ -57,12 +59,12 @@ public class LotService : ILotService
         
         if (auction is null)
         {
-            throw new ArgumentException("No auction found");
+            throw new LotValidationException([new ValidationError("AuctionId", "Аукціон не знайдено")]);
         }
         
-        if (auction.Start <= DateTime.Now)
+        if (auction.Start <= DateTime.UtcNow)
         {
-            throw new ArgumentException("Auction already started");
+            throw new LotValidationException([new ValidationError("Auction", "Аукціон вже розпочато")]);
         }
 
         var lot = new Lot()
@@ -86,19 +88,19 @@ public class LotService : ILotService
         
         if (selectedLot is null)
         {
-            throw new NullReferenceException("No lots found");
+            throw new LotValidationException([new ValidationError("LotId", "Лот не знайдено")]);
         }
             
         var auction = _auctionRepository.GetById(selectedLot.AuctionId);
         
         if (auction is null)
         {
-            throw new ArgumentException("No matching auction found.");
+            throw new LotValidationException([new ValidationError("AuctionId", "Аукціон не знайдено")]);
         }
         
-        if (auction.Start <= DateTime.Now)
+        if (auction.Start <= DateTime.UtcNow)
         {
-            throw new ArgumentException("Auction already started");
+            throw new LotValidationException([new ValidationError("Auction", "Аукціон вже розпочато")]);
         }
 
         var lot = new Lot()
@@ -120,19 +122,19 @@ public class LotService : ILotService
         
         if (selectedLot is null)
         {
-            throw new NullReferenceException("No lots found");
+            throw new LotValidationException([new ValidationError("LotId", "Лот не знайдено")]);
         }
             
         var auction = _auctionRepository.GetById(selectedLot.AuctionId);
         
         if (auction is null)
         {
-            throw new ArgumentException("No matching auction found.");
+            throw new LotValidationException([new ValidationError("AuctionId", "Аукціон не знайдено")]);
         }
         
-        if (auction.Start <= DateTime.Now)
+        if (auction.Start <= DateTime.UtcNow)
         {
-            throw new ArgumentException("Auction already started");
+            throw new LotValidationException([new ValidationError("Auction", "Аукціон вже розпочато")]);
         }
         
         _lotRepository.Delete(lotId);

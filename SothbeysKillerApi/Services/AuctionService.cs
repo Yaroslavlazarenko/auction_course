@@ -1,4 +1,6 @@
-﻿using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Exceptions;
+using SothbeysKillerApi.Entities;
 using SothbeysKillerApi.Repository;
 
 namespace SothbeysKillerApi.Services;
@@ -52,19 +54,19 @@ public class AuctionService : IAuctionService
 
     public Guid CreateAuction(AuctionCreateRequest request)
     {
-        if (request.Title.Length < 3 || request.Title.Length > 255)
+        if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Length < 3 || request.Title.Length > 255)
         {
-            throw new ArgumentException();
+            throw new AuctionValidationException([new ValidationError("Title", "Назва аукціону повинна містити від 3 до 255 символів")]);
         }
         
-        if (request.Start < DateTime.Now)
+        if (request.Start < DateTime.UtcNow)
         {
-            throw new ArgumentException();
+            throw new AuctionValidationException([new ValidationError("Start", "Дата початку аукціону повинна бути пізніше поточного часу")]);
         }
         
         if (request.Finish <= request.Start)
         {
-            throw new ArgumentException();
+            throw new AuctionValidationException([new ValidationError("Finish", "Дата завершення повинна бути пізніше дати початку аукціону")]);
         }
         
         var auction = new Auction()
@@ -86,7 +88,7 @@ public class AuctionService : IAuctionService
 
         if (auction is null)
         {
-            throw new NullReferenceException();
+            throw new AuctionValidationException([new ValidationError("Id", "Auction not found")]);
         }
             
         var response = new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish);
@@ -100,22 +102,25 @@ public class AuctionService : IAuctionService
         
         if (auction is null)
         {
-            throw new NullReferenceException();
+            throw new AuctionValidationException([new ValidationError("Id", "Auction not found")]);
         }
 
-        if (auction.Start <= DateTime.Now)
+        if (auction.Start <= DateTime.UtcNow)
         {
-            throw new ArgumentException();
+            throw new AuctionValidationException([new ValidationError("Start", "Аукціон вже розпочато, редагування неможливе")
+            ]);
         }
         
-        if (request.Start < DateTime.Now)
+        if (request.Start < DateTime.UtcNow)
         {
-            throw new ArgumentException();
+            throw new AuctionValidationException([new ValidationError("Start", "Дата початку аукціону повинна бути пізніше поточного часу")
+            ]);
         }
 
         if (request.Finish <= request.Start)
         {
-            throw new ArgumentException();
+            throw new AuctionValidationException([new ValidationError("Finish", "Дата завершення повинна бути пізніше дати початку аукціону")
+            ]);
         }
 
         auction.Start = request.Start;
@@ -130,12 +135,12 @@ public class AuctionService : IAuctionService
         
         if (auction is null)
         {
-            throw new NullReferenceException();
+            throw new AuctionValidationException([new ValidationError("Id", "Auction not found")]);
         }
         
-        if (auction.Start <= DateTime.Now)
+        if (auction.Start <= DateTime.UtcNow)
         {
-            throw new ArgumentException();
+            throw new AuctionValidationException([new ValidationError("Start", "Аукціон вже розпочато, видалення неможливе")]);
         }
 
         _auctionRepository.Delete(id);

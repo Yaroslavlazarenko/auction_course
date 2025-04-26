@@ -7,15 +7,6 @@ public record CreateBidRequest(Guid LotId, Guid UserId, decimal Amount);
 
 public record BidResponse(string UserName, decimal Amount, DateTime Created);
 
-public class Bid
-{
-    public Guid Id { get; set; }
-    public Guid LotId { get; set; }
-    public Guid UserId { get; set; }
-    public decimal Amount { get; set; }
-    public DateTime Created { get; set; }
-}
-
 [ApiController]
 [Route("api/v1/[controller]")]
 public class BidController : ControllerBase

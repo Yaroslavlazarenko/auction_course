@@ -1,4 +1,6 @@
 using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Exceptions;
+using SothbeysKillerApi.Entities;
 using SothbeysKillerApi.Repository;
 
 namespace SothbeysKillerApi.Services;
@@ -30,7 +32,7 @@ public class BidService : IBidService
         
         if (lot is null)
         {
-            throw new ArgumentException();
+            throw new BidValidationException([new ValidationError("Field", "Некоректні дані для ставки")]);
         }
 
         //Поки для перевірки отримання закоментовано
@@ -38,12 +40,12 @@ public class BidService : IBidService
         //
         // if (auction is null)
         // {
-        //     throw new ArgumentException();
+        //     throw new BidValidationException(new[] { new ValidationError("Field", "Некоректні дані для ставки") });
         // }
         //
-        // if (auction.Start >= DateTime.Now)
+        // if (auction.Start >= DateTime.UtcNow)
         // {
-        //     throw new ArgumentException();
+        //     throw new BidValidationException(new[] { new ValidationError("Field", "Некоректні дані для ставки") });
         // }
 
         var bids = _bidRepository.GetByLotId(lotId).ToList();
@@ -70,7 +72,7 @@ public class BidService : IBidService
         
         if (lot is null)
         {
-            throw new ArgumentException();
+            throw new BidValidationException([new ValidationError("Field", "Некоректні дані для ставки")]);
         }
         
         //Поки для перевірки створення закоментовано
@@ -79,19 +81,19 @@ public class BidService : IBidService
         //
         // if (auction is null)
         // {
-        //     throw new ArgumentException();
+        //     throw new BidValidationException(new[] { new ValidationError("Field", "Некоректні дані для ставки") });
         // }
         //
-        // if (auction.Start >= DateTime.Now)
+        // if (auction.Start >= DateTime.UtcNow)
         // {
-        //     throw new ArgumentException();
+        //     throw new BidValidationException(new[] { new ValidationError("Field", "Некоректні дані для ставки") });
         // }
 
         var user = _userRepository.GetById(request.UserId);
 
         if (user is null)
         {
-            throw new ArgumentException();
+            throw new BidValidationException([new ValidationError("UserId", "Користувача із вказаним ідентифікатором не знайдено")]);
         }
 
         var lastBidPrice = _bidRepository.GetByLotId(request.LotId)
@@ -103,14 +105,14 @@ public class BidService : IBidService
         {
             if (request.Amount < lot.StartPrice)
             {
-                throw new ArgumentException();
+                throw new BidValidationException([new ValidationError("Amount", $"Сума ставки має бути не меншою за стартову ціну лота: {lot.StartPrice}")]);
             }
             
         }
         else
         {
             if (request.Amount < lastBidPrice + lot.PriceStep){
-                throw new ArgumentException();
+                throw new BidValidationException([new ValidationError("Amount", $"Сума ставки має бути не меншою за попередню ставку плюс крок: {lastBidPrice + lot.PriceStep}")]);
             }
         }
 
