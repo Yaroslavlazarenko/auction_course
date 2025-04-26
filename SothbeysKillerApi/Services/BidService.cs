@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Repository;
 
 namespace SothbeysKillerApi.Services;
 
@@ -10,91 +9,122 @@ public interface IBidService
     BidResponse CreateBid(CreateBidRequest request);
 }
 
-
-
 public class BidService : IBidService
 {
-    private static List<Bid> _bidsStorage = [];
+    private readonly IBidRepository _bidRepository;
+    private readonly ILotRepository _lotRepository;
+    private readonly IAuctionRepository _auctionRepository;
+    private readonly IUserRepository _userRepository;
+
+    public BidService(IBidRepository bidRepository, ILotRepository lotRepository, IAuctionRepository auctionRepository, IUserRepository userRepository)
+    {
+        _bidRepository = bidRepository;
+        _lotRepository = lotRepository;
+        _auctionRepository = auctionRepository;
+        _userRepository = userRepository;
+    }
+
     public List<BidResponse> GetBidsByLotId(Guid lotId)
     {
-        var lot = LotService.lotsStorage.FirstOrDefault(lot => lot.Id == lotId);
+        var lot = _lotRepository.GetById(lotId);
+        
         if (lot is null)
         {
             throw new ArgumentException();
         }
-        
-        var auction = AuctionService.auctionsStorage.FirstOrDefault(auction => auction.Id == lot.AuctionId);
-        if (auction is null)
-        {
-            throw new ArgumentException();
-        }
-        
-        if (auction.Start >= DateTime.Now)
-        {
-            throw new ArgumentException();
-        }
-        
-        var bids = _bidsStorage.Where(bid => bid.LotId == lotId).ToList();
-        
-        if (!bids.Any())
+
+        //Поки для перевірки отримання закоментовано
+        // var auction = _auctionRepository.GetById(lot.AuctionId);
+        //
+        // if (auction is null)
+        // {
+        //     throw new ArgumentException();
+        // }
+        //
+        // if (auction.Start >= DateTime.Now)
+        // {
+        //     throw new ArgumentException();
+        // }
+
+        var bids = _bidRepository.GetByLotId(lotId).ToList();
+
+        if (bids.Count == 0)
         {
             return new List<BidResponse>();
         }
-        
+
         var bidResponses = bids
             .Select(bid =>
             {
-                var user = UserService.usersStorage.First(user => user.Id == bid.UserId);
-                return new BidResponse(user.Name, bid.Price, bid.Timestamp);
+                var user = _userRepository.GetById(bid.UserId);
+                return new BidResponse(user!.Name, bid.Amount, bid.Created);
             })
             .ToList();
 
         return bidResponses;
     }
 
-    
-    [HttpPost]
     public BidResponse CreateBid(CreateBidRequest request)
     {
-        var lot = LotService.lotsStorage.FirstOrDefault(lot => lot.Id == request.LotId);
+        var lot = _lotRepository.GetById(request.LotId);
+        
         if (lot is null)
         {
             throw new ArgumentException();
         }
+        
+        //Поки для перевірки створення закоментовано
+        
+        // var auction = _auctionRepository.GetById(lot.AuctionId);
+        //
+        // if (auction is null)
+        // {
+        //     throw new ArgumentException();
+        // }
+        //
+        // if (auction.Start >= DateTime.Now)
+        // {
+        //     throw new ArgumentException();
+        // }
 
-        var user = UserService.usersStorage.FirstOrDefault(user => user.Id == request.UserId);
+        var user = _userRepository.GetById(request.UserId);
+
         if (user is null)
         {
             throw new ArgumentException();
         }
-        
-        var lastBidPrice = _bidsStorage
-            .Where(bid => bid.LotId == request.LotId)
-            .Select(bid => bid.Price)
-            .DefaultIfEmpty(0)
+
+        var lastBidPrice = _bidRepository.GetByLotId(request.LotId)
+            .Select(bid => bid.Amount)
+            .DefaultIfEmpty(-1)
             .Max();
-        
-        if (request.Price < lot.StartPrice)
+
+        if (lastBidPrice == -1)
         {
-            throw new ArgumentException();
+            if (request.Amount < lot.StartPrice)
+            {
+                throw new ArgumentException();
+            }
+            
+        }
+        else
+        {
+            if (request.Amount < lastBidPrice + lot.PriceStep){
+                throw new ArgumentException();
+            }
         }
 
-        if (request.Price < lastBidPrice + lot.PriceStep)
-        {
-            throw new ArgumentException();
-        }
-        
         var bid = new Bid()
         {
             Id = Guid.NewGuid(),
             LotId = request.LotId,
-            Price = request.Price,
-            UserId = request.UserId
+            Amount = request.Amount,
+            UserId = request.UserId,
+            Created = DateTime.Now
         };
 
-        _bidsStorage.Add(bid);
-        
-        return new BidResponse(user.Name, request.Price, DateTime.Now);
-    }
+        _bidRepository.Create(bid);
 
+        return new BidResponse(user.Name, request.Amount, bid.Created);
+    }
 }

@@ -1,4 +1,5 @@
-﻿using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Repository;
 
 namespace SothbeysKillerApi.Services;
 
@@ -10,7 +11,15 @@ public interface IUserService
 
 public class UserService : IUserService
 {
-    public static List<User> usersStorage = [];
+    private readonly IUserRepository _userRepository;
+    public UserService(IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+    public User? GetUserById(Guid id)
+    {
+        return _userRepository.GetById(id);
+    }
     
     public void RegisterUser(RegisterUserRequest request)
     {
@@ -29,7 +38,7 @@ public class UserService : IUserService
             throw new ArgumentException("Password must be between 3 and 255 characters");
         }
 
-        if (usersStorage.Any(u => u.Email == request.Email))
+        if (_userRepository.GetByEmail(request.Email) != null)
         {
             throw new ArgumentException();
         }
@@ -42,32 +51,31 @@ public class UserService : IUserService
             Password = request.Password
         };
         
-        usersStorage.Add(user);
+        _userRepository.Create(user);
     }
     
     public LoginUserResponse LoginUser(LoginUserRequest request)
     {
-        if (request.Email.Length < 3 || request.Email.Length > 255 || request.Password.Length < 3 ||
-            request.Password.Length > 255)
+        if (request.Email.Length < 3 
+            || request.Email.Length > 255 
+            || request.Password.Length < 3 
+            || request.Password.Length > 255)
         {
             throw new ArgumentException();
         }
         
-        if (usersStorage.All(u => u.Email != request.Email))
+        var user = _userRepository.GetByEmail(request.Email);
+        
+        if (user == null)
         {
             throw new ArgumentException();
         }
         
-        var user = usersStorage
-            .Where(u => u.Email == request.Email && u.Password == request.Password)
-            .Select(user => new LoginUserResponse(user.Id, user.Name, user.Email))
-            .FirstOrDefault();
-
-        if (user is null)
+        if (user.Password != request.Password)
         {
             throw new UnauthorizedAccessException("Invalid password");
         }
         
-        return user;
+        return new LoginUserResponse(user.Id, user.Name, user.Email);
     }
 }

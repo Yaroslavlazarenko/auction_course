@@ -9,7 +9,8 @@ public class InMemoryAuctionRepository: IAuctionRepository
     public IEnumerable<Auction> GetPast()
     {
         var auctions = auctionsStorage
-            .Where(a => a.Finish < DateTime.Now);
+            .Where(a => a.Finish < DateTime.Now)
+            .OrderByDescending(a => a.Start);
 
         return auctions;
     }
@@ -17,7 +18,8 @@ public class InMemoryAuctionRepository: IAuctionRepository
     public IEnumerable<Auction> GetActive()
     {
         var auctions = auctionsStorage
-            .Where(a => a.Start < DateTime.Now && a.Finish > DateTime.Now);
+            .Where(a => a.Start < DateTime.Now && a.Finish > DateTime.Now)
+            .OrderByDescending(a => a.Start);
         
         return auctions;
     }
@@ -25,7 +27,8 @@ public class InMemoryAuctionRepository: IAuctionRepository
     public IEnumerable<Auction> GetFuture()
     {
         var auctions = auctionsStorage
-            .Where(a => a.Start > DateTime.Now);
+            .Where(a => a.Start > DateTime.Now)
+            .OrderByDescending(a => a.Start);
         
         return auctions;
     }

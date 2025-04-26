@@ -29,7 +29,6 @@ public class AuctionService : IAuctionService
 
         return auctions
             .Select(auction => new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish))
-            .OrderByDescending(a => a.Start)
             .ToList();
     }
     
@@ -39,7 +38,6 @@ public class AuctionService : IAuctionService
 
         return auctions
             .Select(auction => new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish))
-            .OrderByDescending(a => a.Start)
             .ToList();
     }
     
@@ -49,7 +47,6 @@ public class AuctionService : IAuctionService
 
         return auctions
             .Select(auction => new AuctionResponse(auction.Id, auction.Title, auction.Start, auction.Finish))
-            .OrderByDescending(a => a.Start)
             .ToList();
     }
 

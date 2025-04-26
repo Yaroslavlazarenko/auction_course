@@ -3,17 +3,17 @@ using SothbeysKillerApi.Services;
 
 namespace SothbeysKillerApi.Controllers;
 
-public record CreateBidRequest(Guid LotId, Guid UserId, decimal Price);
+public record CreateBidRequest(Guid LotId, Guid UserId, decimal Amount);
 
-public record BidResponse(string UserName, decimal Price, DateTime Timestamp);
+public record BidResponse(string UserName, decimal Amount, DateTime Created);
 
 public class Bid
 {
     public Guid Id { get; set; }
     public Guid LotId { get; set; }
     public Guid UserId { get; set; }
-    public decimal Price { get; set; }
-    public DateTime Timestamp { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime Created { get; set; }
 }
 
 [ApiController]
