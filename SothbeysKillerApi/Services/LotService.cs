@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using SothbeysKillerApi.Controllers;
+using SothbeysKillerApi.Repository;
 
 namespace SothbeysKillerApi.Services;
 
@@ -14,49 +15,54 @@ public interface ILotService
 
 public class LotService : ILotService
 {
-    public static List<Lot> lotsStorage = [];
-    
+    private readonly ILotRepository _lotRepository;
+    private readonly IAuctionRepository _auctionRepository;
+
+    public LotService(ILotRepository lotRepository, IAuctionRepository auctionRepository)
+    {
+        _lotRepository = lotRepository;
+        _auctionRepository = auctionRepository;
+    }
+
     public LotResponse LotInfoById(Guid lotId)
     {
-        var lot = lotsStorage
-            .Where(lot => lot.Id == lotId)
-            .Select(lot => new LotResponse(lot.Id, lot.AuctionId, lot.Title, lot.Description, lot.StartPrice, lot.PriceStep))
-            .FirstOrDefault();
-
+        var lot = _lotRepository.GetById(lotId);
+        
         if (lot is null)
         {
             throw new NullReferenceException("No lots found");
         }
-
-        return lot;
+            
+        return new LotResponse(lot.Id, lot.AuctionId, lot.Title, lot.Description, lot.StartPrice, lot.PriceStep);
     }
-    
+
     public List<LotResponse> GetLotsByAuctionId(Guid auctionId)
     {
-        if (AuctionService.auctionsStorage.All(auc => auc.Id != auctionId))
-        {
-            throw new ArgumentException("No auction found");
-        }
-        
-        var lots = lotsStorage
-            .Where(lot => lot.AuctionId == auctionId)
+        var lots = _lotRepository.GetByAuctionId(auctionId)
             .Select(lot => new LotResponse(lot.Id, lot.AuctionId, lot.Title, lot.Description, lot.StartPrice, lot.PriceStep))
             .OrderBy(lot => lot.Title)
             .ToList();
-
-        if (!lots.Any())
+        
+        if (lots.Count == 0)
         {
             throw new NullReferenceException("No lots found");
         }
-        
+            
         return lots;
     }
 
     public Guid CreateLot(CreateLotRequest request)
     {
-        if (AuctionService.auctionsStorage.All(auc => auc.Start <= DateTime.Now && auc.Id != request.AuctionId))
+        var auction = _auctionRepository.GetById(request.AuctionId);
+        
+        if (auction is null)
         {
             throw new ArgumentException("No auction found");
+        }
+        
+        if (auction.Start <= DateTime.Now)
+        {
+            throw new ArgumentException("Auction already started");
         }
 
         var lot = new Lot()
@@ -69,38 +75,32 @@ public class LotService : ILotService
             AuctionId = request.AuctionId
         };
         
-        lotsStorage.Add(lot);
-
-        return lot.Id;
+        var created = _lotRepository.Create(lot);
+        
+        return created.Id;
     }
 
     public void ModifyLotById(Guid lotId, ModifyLotRequest request)
     {
-        if (request.StartPrice <= 0 || request.PriceStep <= 0)
-        {
-            throw new ArgumentException();
-        }
-
-        if (request.Title.Length < 3 || request.Title.Length > 255 || request.Description.Length < 3 ||
-            request.Description.Length > 255)
-        {
-            throw new ArgumentException();
-        }
+        var selectedLot = _lotRepository.GetById(lotId);
         
-        var selectedLot = lotsStorage.FirstOrDefault(lot => lot.Id == lotId);
-
         if (selectedLot is null)
         {
             throw new NullReferenceException("No lots found");
         }
+            
+        var auction = _auctionRepository.GetById(selectedLot.AuctionId);
         
-        if (AuctionService.auctionsStorage.All(auction => auction.Id != selectedLot.AuctionId && auction.Start <= DateTime.Now))
+        if (auction is null)
         {
             throw new ArgumentException("No matching auction found.");
         }
         
-        lotsStorage.Remove(selectedLot);
-        
+        if (auction.Start <= DateTime.Now)
+        {
+            throw new ArgumentException("Auction already started");
+        }
+
         var lot = new Lot()
         {
             Id = selectedLot.Id,
@@ -111,23 +111,30 @@ public class LotService : ILotService
             AuctionId = selectedLot.AuctionId
         };
         
-        lotsStorage.Add(lot);
+        _lotRepository.Update(lot);
     }
 
     public void DeleteLotById(Guid lotId)
     {
-        var selectedLot = lotsStorage.FirstOrDefault(lot => lot.Id == lotId);
-
+        var selectedLot = _lotRepository.GetById(lotId);
+        
         if (selectedLot is null)
         {
             throw new NullReferenceException("No lots found");
         }
+            
+        var auction = _auctionRepository.GetById(selectedLot.AuctionId);
         
-        if (AuctionService.auctionsStorage.All(auction => auction.Id != selectedLot.AuctionId && auction.Start <= DateTime.Now))
+        if (auction is null)
         {
             throw new ArgumentException("No matching auction found.");
         }
         
-        lotsStorage.Remove(selectedLot);
+        if (auction.Start <= DateTime.Now)
+        {
+            throw new ArgumentException("Auction already started");
+        }
+        
+        _lotRepository.Delete(lotId);
     }
 }
