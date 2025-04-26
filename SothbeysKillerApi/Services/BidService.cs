@@ -122,7 +122,7 @@ public class BidService : IBidService
             LotId = request.LotId,
             Amount = request.Amount,
             UserId = request.UserId,
-            Created = DateTime.Now
+            Created = DateTime.UtcNow
         };
 
         _bidRepository.Create(bid);

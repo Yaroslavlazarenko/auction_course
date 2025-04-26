@@ -9,7 +9,7 @@ namespace SothbeysKillerApi.Configurations
         public void Configure(EntityTypeBuilder<Auction> builder)
         {
             builder.HasKey(a => a.Id);
-            builder.Property(a => a.Title).IsRequired().HasMaxLength(200);
+            builder.Property(a => a.Title).IsRequired().HasMaxLength(255);
             builder.Property(a => a.Start).IsRequired().HasColumnType("timestamp with time zone");
             builder.Property(a => a.Finish).IsRequired().HasColumnType("timestamp with time zone");
         }
