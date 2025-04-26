@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using SothbeysKillerApi.Controllers;
 
 namespace SothbeysKillerApi.Services;
@@ -9,10 +10,11 @@ public interface IBidService
     BidResponse CreateBid(CreateBidRequest request);
 }
 
+
+
 public class BidService : IBidService
 {
     private static List<Bid> _bidsStorage = [];
-    
     public List<BidResponse> GetBidsByLotId(Guid lotId)
     {
         var lot = LotService.lotsStorage.FirstOrDefault(lot => lot.Id == lotId);
@@ -42,8 +44,8 @@ public class BidService : IBidService
         var bidResponses = bids
             .Select(bid =>
             {
-                var user = UserService.usersStorage.FirstOrDefault(user => user.Id == bid.UserId);
-                return new BidResponse(user?.Name ?? "Невідомий користувач", bid.Price, bid.Timestamp);
+                var user = UserService.usersStorage.First(user => user.Id == bid.UserId);
+                return new BidResponse(user.Name, bid.Price, bid.Timestamp);
             })
             .ToList();
 

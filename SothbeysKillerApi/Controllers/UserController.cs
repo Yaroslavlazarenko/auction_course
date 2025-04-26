@@ -18,8 +18,13 @@ public class User
 [Route("api/v1/[controller]/[action]")]
 public class UserController : ControllerBase
 {
-    private readonly IUserService _userService = new UserService();
-    
+    private readonly IUserService _userService;
+
+    public UserController(IUserService userService)
+    {
+        _userService = userService;
+    }
+
     [HttpPost]
     public IActionResult Signup(RegisterUserRequest request)
     {

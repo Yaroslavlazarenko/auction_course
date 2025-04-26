@@ -21,8 +21,13 @@ public class Lot
 [Route("api/v1/[controller]")]
 public class LotController : ControllerBase
 {
-    private readonly ILotService _lotService = new LotService();
-    
+    private readonly ILotService _lotService;
+
+    public LotController(ILotService lotService)
+    {
+        _lotService = lotService;
+    }
+
     [HttpGet("{lotId:guid}")]
     public IActionResult LotInfoById(Guid lotId)
     {
